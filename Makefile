@@ -57,7 +57,7 @@ index:
 # Start FastAPI server
 api:
 	@echo "Starting FastAPI server..."
-	uvicorn src.patent_assistant.api.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn src.patent_assistant.api.main:app --reload --host 0.0.0.0 --port 8000 --reload-exclude "venv/*" --reload-exclude "*.pyc" --reload-exclude "__pycache__/*"
 
 # Launch Streamlit UI
 ui:
@@ -92,10 +92,16 @@ clean:
 	@echo "✅ Cleanup complete"
 
 # Development workflow
+# Start both servers (recommended for demo)
+start:
+	@echo "Starting both API and UI servers..."
+	./start_servers.sh
+
 dev: setup install
 	@echo "Development environment ready!"
 	@echo "Next steps:"
 	@echo "  1. make ingest    # Load patent data"
 	@echo "  2. make index     # Build search indexes"
-	@echo "  3. make api       # Start API server"
-	@echo "  4. make ui        # Launch UI (in another terminal)"
+	@echo "  3. make start     # Start both servers (recommended)"
+	@echo "  4. make api       # Start API server only"
+	@echo "  5. make ui        # Launch UI only"
