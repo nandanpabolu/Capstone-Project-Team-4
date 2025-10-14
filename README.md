@@ -19,26 +19,36 @@ This system provides:
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Python 3.9+
+- Git
+
+### Installation
+
 ```bash
-# Setup environment
-poetry install
-poetry shell
+# Clone the repository
+git clone https://github.com/nandanpabolu/Capstone-Project-Team-4.git
+cd Capstone-Project-Team-4
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 
 # Initialize project
 make setup
 
-# Ingest patent data
-make ingest
-
-# Build search indexes
-make index
-
-# Start API server
-make api
-
-# Launch UI (in another terminal)
-make ui
+# Start the application
+make api    # Terminal 1: Start API server
+make ui     # Terminal 2: Start Streamlit UI
 ```
+
+### Access the Application
+- **Streamlit UI**: http://localhost:8501
+- **API Server**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
 
 ## 📁 Project Structure
 
@@ -119,9 +129,33 @@ make test
 - **Safety & Crisis Lead**: Arya Koirala
 - **DevOps/QA**: Nicholas Joseph
 
+## 🤝 Contributing
+
+This is a capstone project for Team 4 - Patent Partners. For development:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
 ## 📄 License
 
-MIT License - Educational/Research Use Only
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Team
+
+- **Team Lead**: Arya Koirala
+- **Data Engineer**: Devika Amalkar  
+- **Backend Engineer**: Nandan P
+- **Frontend Engineer**: Rachel Mathew
+- **Safety & Crisis Lead**: Arya Koirala
+- **DevOps/QA**: Nicholas Joseph
+
+## 📞 Contact
+
+- **Repository**: [https://github.com/nandanpabolu/Capstone-Project-Team-4](https://github.com/nandanpabolu/Capstone-Project-Team-4)
+- **Issues**: [GitHub Issues](https://github.com/nandanpabolu/Capstone-Project-Team-4/issues)
 
 ---
 
