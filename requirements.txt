@@ -1,0 +1,31 @@
+# Patent Partners Assistant - Dependencies
+# Core Framework & API
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# UI Framework
+streamlit
+streamlit-option-menu
+
+# Database & Storage
+sqlite-utils
+python-docx
+lxml
+
+# Data Processing
+pandas
+numpy
+requests
+
+# Utilities
+loguru
+rich
+python-dotenv
+
+# Development & Testing
+pytest
+pytest-asyncio
+black
+isort
