@@ -45,11 +45,14 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-data/processed/patents.db
-data/processed/backups/
+data/raw/
+data/processed/
+data/exports/
 indexes/
 logs/
 *.log
+*.db
+*.sqlite3
 
 # Environment variables
 .env
