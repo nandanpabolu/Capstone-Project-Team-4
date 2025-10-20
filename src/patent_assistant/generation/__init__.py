@@ -8,6 +8,9 @@ from .export import (
     export_memo_to_docx,
     export_draft_to_docx,
     create_docx_document,
+    export_memo_to_pdf,
+    export_draft_to_pdf,
+    create_pdf_document,
 )
 
 __all__ = [
@@ -26,4 +29,7 @@ __all__ = [
     "export_memo_to_docx",
     "export_draft_to_docx",
     "create_docx_document",
+    "export_memo_to_pdf",
+    "export_draft_to_pdf",
+    "create_pdf_document",
 ]

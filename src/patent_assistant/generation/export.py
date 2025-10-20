@@ -1,7 +1,7 @@
 """
 Document Export Functionality.
 
-Export generated content to DOCX format with professional formatting.
+Export generated content to DOCX and PDF formats with professional formatting.
 """
 
 import os
@@ -12,6 +12,11 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from loguru import logger
 
 
@@ -260,6 +265,282 @@ def export_draft_to_docx(
         metadata["inventors"] = inventors
     
     return export_to_docx(
+        content=draft_text,
+        output_path=output_path,
+        title=title,
+        citations=citations,
+        metadata=metadata,
+    )
+
+
+# ============================================================================
+# PDF Export Functions
+# ============================================================================
+
+def create_pdf_document(
+    content: str,
+    output_path: str,
+    title: str = "Patent Document",
+    citations: List[Dict[str, Any]] = None,
+    metadata: Dict[str, Any] = None,
+) -> str:
+    """
+    Create a professionally formatted PDF document.
+    
+    Args:
+        content: Main document content
+        output_path: Path to save PDF file
+        title: Document title
+        citations: List of citations to include
+        metadata: Additional metadata (authors, date, etc.)
+    
+    Returns:
+        Absolute path to saved file
+    
+    Raises:
+        RuntimeError: If PDF creation fails
+    """
+    try:
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(
+            output_path,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72,
+        )
+        
+        # Container for the 'Flowable' objects
+        elements = []
+        
+        # Define styles
+        styles = getSampleStyleSheet()
+        
+        # Title style
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor='black',
+            spaceAfter=30,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Heading styles
+        heading1_style = ParagraphStyle(
+            'CustomHeading1',
+            parent=styles['Heading1'],
+            fontSize=16,
+            textColor='black',
+            spaceAfter=12,
+            spaceBefore=12,
+            fontName='Helvetica-Bold'
+        )
+        
+        heading2_style = ParagraphStyle(
+            'CustomHeading2',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor='black',
+            spaceAfter=10,
+            spaceBefore=10,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Body style
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['BodyText'],
+            fontSize=11,
+            textColor='black',
+            spaceAfter=12,
+            alignment=TA_JUSTIFY,
+            fontName='Helvetica'
+        )
+        
+        # Add title
+        elements.append(Paragraph(title, title_style))
+        elements.append(Spacer(1, 0.2 * inch))
+        
+        # Add metadata
+        if metadata:
+            meta_style = ParagraphStyle(
+                'Metadata',
+                parent=styles['Normal'],
+                fontSize=10,
+                textColor='grey',
+                alignment=TA_CENTER
+            )
+            
+            if "inventors" in metadata:
+                inventors = ", ".join(metadata["inventors"])
+                elements.append(Paragraph(f"Inventors: {inventors}", meta_style))
+            
+            if "date" in metadata:
+                elements.append(Paragraph(f"Date: {metadata['date']}", meta_style))
+            
+            elements.append(Spacer(1, 0.3 * inch))
+        
+        # Add generation timestamp
+        timestamp_style = ParagraphStyle(
+            'Timestamp',
+            parent=styles['Normal'],
+            fontSize=9,
+            textColor='grey',
+            alignment=TA_CENTER
+        )
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+        elements.append(Paragraph(f"Generated: {timestamp}", timestamp_style))
+        elements.append(Spacer(1, 0.5 * inch))
+        
+        # Add content
+        for line in content.split('\n'):
+            line = line.strip()
+            
+            if not line:
+                elements.append(Spacer(1, 0.1 * inch))
+                continue
+            
+            # Escape special characters for reportlab
+            line = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            
+            # Detect headings
+            if line.startswith('###'):
+                text = line.strip('#').strip()
+                elements.append(Paragraph(text, heading2_style))
+            elif line.startswith('##'):
+                text = line.strip('#').strip()
+                elements.append(Paragraph(text, heading1_style))
+            elif line.startswith('#'):
+                text = line.strip('#').strip()
+                elements.append(Paragraph(text, title_style))
+            # Detect lists
+            elif line.startswith('-') or line.startswith('*'):
+                text = '• ' + line[1:].strip()
+                elements.append(Paragraph(text, body_style))
+            # Regular paragraph
+            else:
+                elements.append(Paragraph(line, body_style))
+        
+        # Add citations if provided
+        if citations and len(citations) > 0:
+            elements.append(PageBreak())
+            elements.append(Paragraph("References", heading1_style))
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            citation_style = ParagraphStyle(
+                'Citation',
+                parent=styles['Normal'],
+                fontSize=10,
+                spaceAfter=10,
+                leftIndent=20
+            )
+            
+            for i, citation in enumerate(citations, 1):
+                patent_id = citation.get("patent_id", "Unknown")
+                relevance = citation.get("relevance", 0.0)
+                snippet = citation.get("text_snippet", "")
+                
+                cite_text = f"[{i}] {patent_id} (Relevance: {relevance:.2f})"
+                elements.append(Paragraph(cite_text, citation_style))
+                
+                if snippet:
+                    snippet_style = ParagraphStyle(
+                        'Snippet',
+                        parent=styles['Normal'],
+                        fontSize=9,
+                        textColor='grey',
+                        leftIndent=40,
+                        spaceAfter=10
+                    )
+                    elements.append(Paragraph(snippet, snippet_style))
+        
+        # Build PDF
+        doc.build(elements)
+        
+        abs_path = os.path.abspath(output_path)
+        file_size = os.path.getsize(abs_path) / 1024  # KB
+        
+        logger.info(f"Exported PDF to {abs_path} ({file_size:.1f} KB)")
+        
+        return abs_path
+        
+    except Exception as e:
+        logger.error(f"Failed to export PDF: {e}")
+        raise RuntimeError(f"Failed to export PDF: {str(e)}")
+
+
+def export_memo_to_pdf(
+    memo_text: str,
+    citations: List[Dict[str, Any]],
+    output_path: str = "invention_memo.pdf",
+    invention_title: str = None,
+) -> str:
+    """
+    Export invention memo to PDF.
+    
+    Args:
+        memo_text: Memo content
+        citations: Patent citations
+        output_path: Where to save file
+        invention_title: Optional invention title
+    
+    Returns:
+        Path to saved file
+    """
+    title = invention_title or "Invention Disclosure Memo"
+    
+    metadata = {
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "inventors": ["To be determined"],
+    }
+    
+    return create_pdf_document(
+        content=memo_text,
+        output_path=output_path,
+        title=title,
+        citations=citations,
+        metadata=metadata,
+    )
+
+
+def export_draft_to_pdf(
+    draft_text: str,
+    citations: List[Dict[str, Any]],
+    output_path: str = "patent_draft.pdf",
+    patent_title: str = None,
+    inventors: List[str] = None,
+) -> str:
+    """
+    Export patent draft to PDF.
+    
+    Args:
+        draft_text: Draft content
+        citations: Patent citations
+        output_path: Where to save file
+        patent_title: Patent title
+        inventors: List of inventor names
+    
+    Returns:
+        Path to saved file
+    """
+    title = patent_title or "Patent Application Draft"
+    
+    metadata = {
+        "date": datetime.now().strftime("%Y-%m-%d"),
+    }
+    
+    if inventors:
+        metadata["inventors"] = inventors
+    
+    return create_pdf_document(
         content=draft_text,
         output_path=output_path,
         title=title,

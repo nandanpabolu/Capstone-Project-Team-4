@@ -9,6 +9,8 @@ from streamlit_option_menu import option_menu
 import requests
 import json
 import time
+import tempfile
+import os
 from typing import Dict, Any, Optional
 
 # API Configuration
@@ -188,13 +190,32 @@ def memo_page():
                     st.markdown("---")
                     st.markdown(result["memo"])
                     
-                    # Download button
-                    st.download_button(
-                        label="📥 Download as Text",
-                        data=result["memo"],
-                        file_name="invention_memo.txt",
-                        mime="text/plain",
-                    )
+                    # Download buttons
+                    col_dl1, col_dl2 = st.columns(2)
+                    with col_dl1:
+                        st.download_button(
+                            label="📥 Download as Text",
+                            data=result["memo"],
+                            file_name="invention_memo.txt",
+                            mime="text/plain",
+                            use_container_width=True,
+                        )
+                    
+                    with col_dl2:
+                        # Generate PDF on the fly
+                        pdf_data = generate_pdf(
+                            content=result["memo"],
+                            title="Invention Disclosure Memo",
+                            citations=result["citations"],
+                        )
+                        if pdf_data:
+                            st.download_button(
+                                label="📄 Download as PDF",
+                                data=pdf_data,
+                                file_name="invention_memo.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                            )
                     
                     # Show metadata
                     with st.expander("ℹ️ Generation Details"):
@@ -301,13 +322,32 @@ def draft_page():
                     else:
                         st.markdown(result["draft"])
                     
-                    # Download button
-                    st.download_button(
-                        label="📥 Download as Text",
-                        data=result["draft"],
-                        file_name="patent_draft.txt",
-                        mime="text/plain",
-                    )
+                    # Download buttons
+                    col_dl1, col_dl2 = st.columns(2)
+                    with col_dl1:
+                        st.download_button(
+                            label="📥 Download as Text",
+                            data=result["draft"],
+                            file_name="patent_draft.txt",
+                            mime="text/plain",
+                            use_container_width=True,
+                        )
+                    
+                    with col_dl2:
+                        # Generate PDF on the fly
+                        pdf_data = generate_pdf(
+                            content=result["draft"],
+                            title="Patent Application Draft",
+                            citations=result["citations"],
+                        )
+                        if pdf_data:
+                            st.download_button(
+                                label="📄 Download as PDF",
+                                data=pdf_data,
+                                file_name="patent_draft.pdf",
+                                mime="application/pdf",
+                                use_container_width=True,
+                            )
                     
                     # Show metadata
                     with st.expander("ℹ️ Generation Details"):
@@ -538,6 +578,121 @@ def parse_sections_from_draft(draft_text: str) -> Dict[str, str]:
         sections[current_section] = "\n".join(current_content).strip()
     
     return sections
+
+
+def generate_pdf(content: str, title: str, citations: list) -> Optional[bytes]:
+    """
+    Generate PDF in memory using reportlab.
+    
+    Args:
+        content: Document content
+        title: Document title
+        citations: List of citations
+    
+    Returns:
+        PDF bytes or None if failed
+    """
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+        from io import BytesIO
+        
+        # Create in-memory PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72,
+        )
+        
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'Title',
+            parent=styles['Heading1'],
+            fontSize=20,
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            textColor='black'
+        )
+        
+        heading_style = ParagraphStyle(
+            'Heading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            spaceAfter=12,
+            spaceBefore=12,
+            textColor='black'
+        )
+        
+        body_style = ParagraphStyle(
+            'Body',
+            parent=styles['BodyText'],
+            fontSize=11,
+            alignment=TA_JUSTIFY,
+            spaceAfter=12,
+        )
+        
+        # Add title
+        elements.append(Paragraph(title, title_style))
+        elements.append(Spacer(1, 0.3 * inch))
+        
+        # Add timestamp
+        timestamp = time.strftime("%Y-%m-%d %H:%M")
+        timestamp_text = f"<i>Generated: {timestamp}</i>"
+        elements.append(Paragraph(timestamp_text, body_style))
+        elements.append(Spacer(1, 0.3 * inch))
+        
+        # Add content
+        for line in content.split('\n'):
+            line = line.strip()
+            if not line:
+                elements.append(Spacer(1, 0.1 * inch))
+                continue
+            
+            # Escape HTML
+            line = line.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            
+            # Format headings
+            if line.startswith('##'):
+                text = line.strip('#').strip()
+                elements.append(Paragraph(f"<b>{text}</b>", heading_style))
+            elif line.startswith('-') or line.startswith('*'):
+                text = '• ' + line[1:].strip()
+                elements.append(Paragraph(text, body_style))
+            else:
+                elements.append(Paragraph(line, body_style))
+        
+        # Add citations
+        if citations:
+            elements.append(PageBreak())
+            elements.append(Paragraph("<b>References</b>", heading_style))
+            elements.append(Spacer(1, 0.2 * inch))
+            
+            for i, cite in enumerate(citations, 1):
+                cite_text = f"[{i}] {cite.get('patent_id', 'Unknown')}"
+                elements.append(Paragraph(cite_text, body_style))
+        
+        # Build PDF
+        doc.build(elements)
+        
+        # Get PDF bytes
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        
+        return pdf_bytes
+        
+    except Exception as e:
+        st.error(f"Failed to generate PDF: {e}")
+        return None
 
 
 if __name__ == "__main__":

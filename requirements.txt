@@ -12,6 +12,7 @@ streamlit-option-menu
 # Database & Storage
 sqlite-utils
 python-docx
+reportlab
 lxml
 
 # Data Processing
