@@ -142,6 +142,24 @@ def memo_page():
         
         # Generation options
         with st.expander("⚙️ Generation Options"):
+            # Mode selection
+            mode = st.radio(
+                "Generation Mode:",
+                options=["Fast & Concise", "Detailed & Comprehensive"],
+                index=0,
+                help="Fast: ~60-90s, focused output | Detailed: ~120-180s, attorney-ready depth",
+                horizontal=True
+            )
+            
+            # Convert to API format
+            mode_value = "fast" if mode == "Fast & Concise" else "detailed"
+            
+            # Show mode info
+            if mode_value == "fast":
+                st.info("⚡ **Fast Mode**: Concise output (~800-1200 words), 60-90 second generation")
+            else:
+                st.info("📚 **Detailed Mode**: Comprehensive output (~1500-2500 words), 120-180 second generation")
+            
             temperature = st.slider(
                 "Creativity (Temperature):",
                 min_value=0.0,
@@ -151,14 +169,25 @@ def memo_page():
                 help="Higher values = more creative but less focused"
             )
             
-            max_tokens = st.slider(
-                "Maximum Length:",
-                min_value=1000,
-                max_value=4000,
-                value=2000,
-                step=500,
-                help="Maximum length of generated memo"
-            )
+            # Adjust max_tokens based on mode
+            if mode_value == "fast":
+                max_tokens = st.slider(
+                    "Maximum Length:",
+                    min_value=800,
+                    max_value=1500,
+                    value=1200,
+                    step=100,
+                    help="Token limit for fast mode"
+                )
+            else:
+                max_tokens = st.slider(
+                    "Maximum Length:",
+                    min_value=1500,
+                    max_value=3000,
+                    value=2000,
+                    step=250,
+                    help="Token limit for detailed mode"
+                )
         
         # Generate button
         generate_clicked = st.button(
@@ -175,11 +204,13 @@ def memo_page():
                 st.warning("⚠️ Please enter a detailed invention description (at least 50 characters).")
             else:
                 # Generate memo
-                with st.spinner("🤖 Generating invention memo... This may take 60-90 seconds..."):
+                wait_time = "60-90 seconds" if mode_value == "fast" else "120-180 seconds"
+                with st.spinner(f"🤖 Generating {mode.lower()} memo... This may take {wait_time}..."):
                     result = generate_memo(
                         invention_description=invention_description,
                         temperature=temperature,
-                        max_tokens=max_tokens
+                        max_tokens=max_tokens,
+                        mode=mode_value
                     )
                 
                 if result["success"]:
@@ -258,6 +289,25 @@ def draft_page():
         
         # Generation options
         with st.expander("⚙️ Generation Options"):
+            # Mode selection
+            mode = st.radio(
+                "Generation Mode:",
+                options=["Fast & Concise", "Detailed & Comprehensive"],
+                index=0,
+                help="Fast: ~60-90s, focused draft | Detailed: ~120-180s, full USPTO compliance",
+                horizontal=True,
+                key="draft_mode"
+            )
+            
+            # Convert to API format
+            mode_value = "fast" if mode == "Fast & Concise" else "detailed"
+            
+            # Show mode info
+            if mode_value == "fast":
+                st.info("⚡ **Fast Mode**: Concise draft (~1200-1800 words), 60-90 second generation")
+            else:
+                st.info("📚 **Detailed Mode**: Comprehensive draft (~2500-3500 words), 120-180 second generation")
+            
             temperature = st.slider(
                 "Creativity (Temperature):",
                 min_value=0.0,
@@ -267,14 +317,25 @@ def draft_page():
                 key="draft_temp"
             )
             
-            max_tokens = st.slider(
-                "Maximum Length:",
-                min_value=2000,
-                max_value=5000,
-                value=3500,
-                step=500,
-                key="draft_tokens"
-            )
+            # Adjust max_tokens based on mode
+            if mode_value == "fast":
+                max_tokens = st.slider(
+                    "Maximum Length:",
+                    min_value=1000,
+                    max_value=2000,
+                    value=1500,
+                    step=100,
+                    key="draft_tokens_fast"
+                )
+            else:
+                max_tokens = st.slider(
+                    "Maximum Length:",
+                    min_value=2000,
+                    max_value=3500,
+                    value=2500,
+                    step=250,
+                    key="draft_tokens_detailed"
+                )
         
         # Generate button
         generate_clicked = st.button(
@@ -291,11 +352,13 @@ def draft_page():
                 st.warning("⚠️ Please enter a detailed invention description (at least 50 characters).")
             else:
                 # Generate draft
-                with st.spinner("🤖 Generating patent draft... This may take 90-120 seconds..."):
+                wait_time = "60-90 seconds" if mode_value == "fast" else "120-180 seconds"
+                with st.spinner(f"🤖 Generating {mode.lower()} draft... This may take {wait_time}..."):
                     result = generate_draft(
                         invention_description=invention_description,
                         temperature=temperature,
-                        max_tokens=max_tokens
+                        max_tokens=max_tokens,
+                        mode=mode_value
                     )
                 
                 if result["success"]:
@@ -459,7 +522,7 @@ def about_page():
     """)
 
 
-def generate_memo(invention_description: str, temperature: float, max_tokens: int) -> Dict[str, Any]:
+def generate_memo(invention_description: str, temperature: float, max_tokens: int, mode: str = "fast") -> Dict[str, Any]:
     """Call API to generate invention memo."""
     try:
         payload = {
@@ -468,13 +531,17 @@ def generate_memo(invention_description: str, temperature: float, max_tokens: in
             "include_citations": True,
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "mode": mode,
         }
+        
+        # Adjust timeout based on mode
+        timeout = 150 if mode == "fast" else 300  # 2.5 min for fast, 5 min for detailed
         
         start_time = time.time()
         response = requests.post(
             f"{API_BASE_URL}/generate/memo",
             json=payload,
-            timeout=180  # 3 minutes
+            timeout=timeout
         )
         elapsed = time.time() - start_time
         
@@ -506,7 +573,7 @@ def generate_memo(invention_description: str, temperature: float, max_tokens: in
         }
 
 
-def generate_draft(invention_description: str, temperature: float, max_tokens: int) -> Dict[str, Any]:
+def generate_draft(invention_description: str, temperature: float, max_tokens: int, mode: str = "fast") -> Dict[str, Any]:
     """Call API to generate patent draft."""
     try:
         payload = {
@@ -515,13 +582,17 @@ def generate_draft(invention_description: str, temperature: float, max_tokens: i
             "include_citations": True,
             "max_tokens": max_tokens,
             "temperature": temperature,
+            "mode": mode,
         }
+        
+        # Adjust timeout based on mode
+        timeout = 150 if mode == "fast" else 300  # 2.5 min for fast, 5 min for detailed
         
         start_time = time.time()
         response = requests.post(
             f"{API_BASE_URL}/generate/draft",
             json=payload,
-            timeout=180  # 3 minutes
+            timeout=timeout
         )
         elapsed = time.time() - start_time
         

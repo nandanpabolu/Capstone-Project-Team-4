@@ -75,6 +75,7 @@ class GenerateRequest(BaseModel):
     include_citations: bool = Field(default=True, description="Include patent citations")
     max_tokens: int = Field(default=2048, description="Maximum tokens to generate", ge=100, le=4096)
     temperature: float = Field(default=0.7, description="Generation temperature", ge=0.0, le=2.0)
+    mode: str = Field(default="fast", description="Generation mode: 'fast' (concise, ~90s) or 'detailed' (comprehensive, ~180s)")
 
 
 class DraftOut(BaseModel):

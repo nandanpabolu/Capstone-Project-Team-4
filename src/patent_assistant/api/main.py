@@ -123,6 +123,7 @@ async def generate_memo_endpoint(request: GenerateRequest):
             prior_art=prior_art,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            mode=request.mode,
         )
         
         logger.info("Memo generated successfully")
@@ -164,6 +165,7 @@ async def generate_draft_endpoint(request: GenerateRequest):
             prior_art=prior_art,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            mode=request.mode,
         )
         
         logger.info("Draft generated successfully")

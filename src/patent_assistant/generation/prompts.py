@@ -1,10 +1,15 @@
 """
 Enhanced Prompt Templates for Patent Document Generation.
 
-Professional USPTO-compliant prompts with few-shot examples and detailed instructions.
+Provides two modes:
+- FAST: Concise, focused output (~60-90 seconds, ~1000 tokens)
+- DETAILED: Comprehensive, attorney-ready output (~120-180 seconds, ~2500 tokens)
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal
+
+# Type for generation mode
+GenerationMode = Literal["fast", "detailed"]
 
 
 # ============================================================================
