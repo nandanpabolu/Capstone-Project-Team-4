@@ -56,13 +56,15 @@ def generate_patent_draft(
             "3. Mistral model is pulled (ollama pull mistral:latest)"
         )
     
-    # Create prompt based on mode
+    # Create prompt based on mode and set appropriate timeout
     if mode == "fast":
         prompt = get_fast_draft_prompt(invention_description, prior_art)
-        logger.info("Using FAST mode - concise output (~90s)")
+        timeout = 180  # 3 minutes for fast mode
+        logger.info("Using FAST mode - concise output (~90s, 3min timeout)")
     else:
         prompt = create_draft_prompt(invention_description, prior_art)
-        logger.info("Using DETAILED mode - comprehensive output (~180s)")
+        timeout = 360  # 6 minutes for detailed mode
+        logger.info("Using DETAILED mode - comprehensive output (~180s, 6min timeout)")
     
     logger.debug(f"Prompt length: {len(prompt)} chars")
     
@@ -73,6 +75,7 @@ def generate_patent_draft(
             system_prompt=SYSTEM_PROMPT_DRAFT,
             temperature=temperature,
             max_tokens=max_tokens,
+            timeout=timeout,
         )
         
         draft_text = result["text"]

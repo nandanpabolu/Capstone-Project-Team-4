@@ -66,6 +66,7 @@ class OllamaClient:
         temperature: float = 0.7,
         max_tokens: int = 2048,
         stop_sequences: Optional[list] = None,
+        timeout: int = 300,  # 5 minutes default timeout
     ) -> Dict[str, Any]:
         """
         Generate text using Ollama.
@@ -76,6 +77,7 @@ class OllamaClient:
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens to generate
             stop_sequences: Stop generation at these sequences
+            timeout: Request timeout in seconds (default 300)
         
         Returns:
             Dict with 'text', 'tokens', 'time_ms'
@@ -107,7 +109,7 @@ class OllamaClient:
             response = requests.post(
                 f"{self.base_url}/api/generate",
                 json=payload,
-                timeout=120  # 2 minutes timeout
+                timeout=timeout
             )
             
             if response.status_code != 200:
@@ -142,6 +144,7 @@ class OllamaClient:
         temperature: float = 0.7,
         max_tokens: int = 2048,
         max_retries: int = 3,
+        timeout: int = 300,  # 5 minutes default
     ) -> Dict[str, Any]:
         """
         Generate with automatic retry on failure.
@@ -152,6 +155,7 @@ class OllamaClient:
             temperature: Sampling temperature
             max_tokens: Max tokens
             max_retries: Maximum retry attempts
+            timeout: Request timeout in seconds (default 300)
         
         Returns:
             Generation result dict
@@ -163,6 +167,7 @@ class OllamaClient:
                     system_prompt=system_prompt,
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    timeout=timeout,
                 )
             except Exception as e:
                 if attempt == max_retries - 1:

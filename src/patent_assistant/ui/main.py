@@ -534,8 +534,8 @@ def generate_memo(invention_description: str, temperature: float, max_tokens: in
             "mode": mode,
         }
         
-        # Adjust timeout based on mode
-        timeout = 150 if mode == "fast" else 300  # 2.5 min for fast, 5 min for detailed
+        # Adjust timeout based on mode (generous margins over backend timeout)
+        timeout = 200 if mode == "fast" else 400  # 3.3 min for fast, 6.7 min for detailed
         
         start_time = time.time()
         response = requests.post(
@@ -585,8 +585,8 @@ def generate_draft(invention_description: str, temperature: float, max_tokens: i
             "mode": mode,
         }
         
-        # Adjust timeout based on mode
-        timeout = 150 if mode == "fast" else 300  # 2.5 min for fast, 5 min for detailed
+        # Adjust timeout based on mode (generous margins over backend timeout)
+        timeout = 200 if mode == "fast" else 400  # 3.3 min for fast, 6.7 min for detailed
         
         start_time = time.time()
         response = requests.post(
